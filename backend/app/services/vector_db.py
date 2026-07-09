@@ -1,7 +1,11 @@
 import os
 import logging
 from typing import List, Dict, Any, Optional
-import chromadb
+try:
+    import chromadb
+except ImportError:
+    chromadb = None
+
 from app.core.config import settings
 from app.services.embeddings import embeddings_service
 
@@ -9,6 +13,11 @@ logger = logging.getLogger(__name__)
 
 class VectorDBService:
     def __init__(self):
+        self.client = None
+        if chromadb is None:
+            logger.warning("ChromaDB package is not installed. Similarity search is disabled.")
+            return
+
         # Create persist directory if it does not exist
         os.makedirs(settings.CHROMA_PERSIST_DIR, exist_ok=True)
         
@@ -24,6 +33,8 @@ class VectorDBService:
         """
         Retrieves or creates a ChromaDB collection.
         """
+        if not self.client:
+            raise RuntimeError("ChromaDB client is not initialized.")
         try:
             return self.client.get_or_create_collection(name=collection_name)
         except Exception as e:
