@@ -1,10 +1,10 @@
-import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from app.models.base import Base
+from app.core.config import settings
 
 # Database URI fallback to local SQLite for easy development
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./study_assistant.db")
+DATABASE_URL = settings.DATABASE_URL
 
 # SQLite needs special argument for multithreading
 connect_args = {}

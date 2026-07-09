@@ -74,4 +74,16 @@ class Settings(BaseSettings):
         case_sensitive = True
         env_file = ".env"
 
+    def __init__(self, **values):
+        super().__init__(**values)
+        # Dynamic path adjustments for Vercel Serverless Function's read-only environment
+        if "VERCEL" in os.environ:
+            if self.DATABASE_URL.startswith("sqlite"):
+                self.DATABASE_URL = "sqlite:////tmp/study_assistant.db"
+            if self.CHROMA_PERSIST_DIR == "./chroma_db":
+                self.CHROMA_PERSIST_DIR = "/tmp/chroma_db"
+            if self.UPLOAD_DIR == "./uploads":
+                self.UPLOAD_DIR = "/tmp/uploads"
+
 settings = Settings()
+
