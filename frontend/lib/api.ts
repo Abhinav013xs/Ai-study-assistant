@@ -1,4 +1,22 @@
-const API_BASE_URL = "http://127.0.0.1:8000/api/v1";
+const getBaseUrl = (): string => {
+    if (typeof window !== "undefined") {
+        // Check if environment variable is defined
+        const envUrl = process.env.NEXT_PUBLIC_API_URL;
+        if (envUrl) return envUrl;
+
+        // Otherwise check hostname
+        const hostname = window.location.hostname;
+        if (hostname === "localhost" || hostname === "127.0.0.1") {
+            return "http://127.0.0.1:8000/api/v1";
+        }
+        // Fallback: assume monorepo proxy routing on Vercel
+        return `${window.location.origin}/api/v1`;
+    }
+    return "http://127.0.0.1:8000/api/v1";
+};
+
+const API_BASE_URL = getBaseUrl();
+
 
 class APIClient {
     private getHeaders(isMultipart = false): HeadersInit {
