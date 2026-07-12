@@ -17,6 +17,12 @@ router = APIRouter()
 def generate_otp_code() -> str:
     return "".join(random.choices(string.digits, k=6))
 
+@router.get("/config")
+def get_auth_config():
+    return {
+        "google_client_id": settings.GOOGLE_CLIENT_ID or ""
+    }
+
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def register(user_in: UserCreate, db: Session = Depends(deps.get_db)):
     """

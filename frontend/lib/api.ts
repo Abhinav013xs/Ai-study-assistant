@@ -90,6 +90,11 @@ class APIClient {
         return this.request("/auth/me");
     }
 
+    async getAuthConfig() {
+        return this.request("/auth/config");
+    }
+
+
     async updateProfile(data: any) {
         return this.request("/auth/me", {
             method: "PUT",

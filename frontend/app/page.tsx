@@ -144,6 +144,58 @@ export default function Home() {
     }
   }, []);
 
+  // Fetch Google Client ID and initialize Google Identity SDK
+  useEffect(() => {
+    const initGoogleAuth = async () => {
+      try {
+        const config = await api.getAuthConfig();
+        if (config && config.google_client_id) {
+          setGoogleClientId(config.google_client_id);
+          
+          // Setup polling interval to wait for Google SDK script to load
+          const checkGoogleSDK = setInterval(() => {
+            if (typeof window !== "undefined" && (window as any).google) {
+              clearInterval(checkGoogleSDK);
+              
+              (window as any).google.accounts.id.initialize({
+                client_id: config.google_client_id,
+                callback: async (response: any) => {
+                  setAuthError("");
+                  setAuthLoading(true);
+                  try {
+                    const res = await api.loginGoogle(response.credential);
+                    localStorage.setItem("token", res.access_token);
+                    setToken(res.access_token);
+                  } catch (err: any) {
+                    setAuthError(err.message || "Google Login failed");
+                  } finally {
+                    setAuthLoading(false);
+                  }
+                }
+              });
+              
+              // Render standard google sign-in button inside hidden container to support programatic click trigger
+              const hiddenContainer = document.getElementById("google-signin-button-hidden");
+              if (hiddenContainer) {
+                (window as any).google.accounts.id.renderButton(
+                  hiddenContainer,
+                  { theme: "outline", size: "large" }
+                );
+              }
+            }
+          }, 500);
+          
+          // Clear interval fallback if Google SDK fails to load in 10s
+          setTimeout(() => clearInterval(checkGoogleSDK), 10000);
+        }
+      } catch (e) {
+        console.error("Failed to load Google Auth configuration:", e);
+      }
+    };
+    initGoogleAuth();
+  }, []);
+
+
   // Fetch app data when token is valid
   useEffect(() => {
     if (token) {
@@ -284,6 +336,24 @@ export default function Home() {
       setAuthLoading(false);
     }
   };
+
+  const handleGoogleLogin = () => {
+    if (googleClientId && googleClientId !== "your-google-client-id.apps.googleusercontent.com" && googleClientId !== "") {
+      const hiddenBtn = document.querySelector("#google-signin-button-hidden [role='button']") as HTMLElement;
+      if (hiddenBtn) {
+        hiddenBtn.click();
+      } else {
+        if (typeof window !== "undefined" && (window as any).google) {
+          (window as any).google.accounts.id.prompt();
+        } else {
+          setAuthError("Google Sign-In SDK is still loading. Please try again in a moment.");
+        }
+      }
+    } else {
+      handleGoogleMockLogin();
+    }
+  };
+
 
   // --- Loader functions ---
   const loadProfile = async () => {
@@ -807,15 +877,17 @@ export default function Home() {
                   <span className="relative bg-slate-900/60 px-3 text-xs text-slate-500">Or continue with scaffolding</span>
                 </div>
 
+                <div id="google-signin-button-hidden" className="hidden"></div>
                 <button
                   type="button"
-                  onClick={handleGoogleMockLogin}
+                  onClick={handleGoogleLogin}
                   disabled={authLoading}
                   className="w-full flex items-center justify-center gap-2 py-2 bg-slate-950/70 border border-slate-800 hover:border-indigo-500 text-slate-300 hover:text-white rounded-lg transition-all cursor-pointer"
                 >
                   <Lock className="h-4 w-4" />
                   OAuth / Google Demo Access
                 </button>
+
 
                 <p className="text-center text-xs text-slate-400 mt-4">
                   {isLogin ? "New to the platform?" : "Already have an account?"}{" "}
