@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     CLAUDE_API_KEY: str = os.getenv("CLAUDE_API_KEY", "")
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
 
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
+
+
     
     # Local Storage vs S3-compatible Object Storage
     USE_S3: bool = os.getenv("USE_S3", "false").lower() in ("true", "1", "yes")
