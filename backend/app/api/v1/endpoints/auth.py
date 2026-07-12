@@ -6,7 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.api import deps
 from app.core import security
+from app.core.config import settings
 from app.models.user import User, UserOTP, UserRole, OTPPurpose
+
 from app.schemas.user import UserCreate, UserOut, Token, VerifyOTP, RequestOTP, UserUpdate
 
 # Configure logger
