@@ -10,6 +10,7 @@ class LLMService:
     def __init__(self):
         self.gemini_key = settings.GEMINI_API_KEY
         self.openai_key = settings.OPENAI_API_KEY
+        self.groq_key = settings.GROQ_API_KEY
         
         if self.gemini_key:
             genai.configure(api_key=self.gemini_key)
@@ -25,7 +26,40 @@ class LLMService:
         """
         Generates a text completion.
         """
-        # Primary: Gemini
+        # Primary: Groq (llama-3.3-70b-versatile)
+        if self.groq_key:
+            try:
+                import requests
+                messages = []
+                if system_instruction:
+                    messages.append({"role": "system", "content": system_instruction})
+                if history:
+                    for h in history:
+                        messages.append({"role": h["role"], "content": h["content"]})
+                messages.append({"role": "user", "content": prompt})
+
+                response = requests.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.groq_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": "llama-3.3-70b-versatile",
+                        "messages": messages,
+                        "temperature": 0.2
+                    },
+                    timeout=30
+                )
+                if response.ok:
+                    res_json = response.json()
+                    return res_json["choices"][0]["message"]["content"]
+                else:
+                    logger.error(f"Groq API returned error {response.status_code}: {response.text}")
+            except Exception as e:
+                logger.error(f"Groq generation failed: {str(e)}")
+
+        # Secondary: Gemini
         if self.gemini_key:
             try:
                 # Configure system instruction and history if available
@@ -82,7 +116,56 @@ class LLMService:
         """
         Streams a response chunk-by-chunk.
         """
-        # Primary: Gemini
+        # Primary: Groq (llama-3.3-70b-versatile)
+        if self.groq_key:
+            try:
+                import requests
+                import json
+                messages = []
+                if system_instruction:
+                    messages.append({"role": "system", "content": system_instruction})
+                if history:
+                    for h in history:
+                        messages.append({"role": h["role"], "content": h["content"]})
+                messages.append({"role": "user", "content": prompt})
+
+                response = requests.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.groq_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": "llama-3.3-70b-versatile",
+                        "messages": messages,
+                        "temperature": 0.2,
+                        "stream": True
+                    },
+                    stream=True,
+                    timeout=30
+                )
+                if response.ok:
+                    for line in response.iter_lines():
+                        if line:
+                            decoded_line = line.decode('utf-8')
+                            if decoded_line.startswith("data: "):
+                                data_str = decoded_line[6:]
+                                if data_str.strip() == "[DONE]":
+                                    break
+                                try:
+                                    chunk_data = json.loads(data_str)
+                                    content = chunk_data["choices"][0]["delta"].get("content", "")
+                                    if content:
+                                        yield content
+                                except Exception:
+                                    pass
+                    return
+                else:
+                    logger.error(f"Groq streaming returned error {response.status_code}: {response.text}")
+            except Exception as e:
+                logger.error(f"Groq streaming failed: {str(e)}")
+
+        # Secondary: Gemini
         if self.gemini_key:
             try:
                 model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=system_instruction)

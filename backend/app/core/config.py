@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     CLAUDE_API_KEY: str = os.getenv("CLAUDE_API_KEY", "")
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+
     
     # Local Storage vs S3-compatible Object Storage
     USE_S3: bool = os.getenv("USE_S3", "false").lower() in ("true", "1", "yes")
